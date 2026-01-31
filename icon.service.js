@@ -5,7 +5,7 @@ export default class IconsService {
     constructor() {
         this.icons = [];
         this.CDN_BASE_URL =
-            'https://cluster.blr1.cdn.digitaloceanspaces.com/fontsawesome/svgs';
+            'https://cdn.jsdelivr.net/gh/dip20/iconfly@main';
 
         this.benchmark('System Startup');
         this.loadIcons();
