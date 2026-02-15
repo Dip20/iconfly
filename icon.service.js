@@ -5,7 +5,7 @@ export default class IconsService {
     constructor() {
         this.icons = [];
         this.CDN_BASE_URL =
-            'https://cdn.jsdelivr.net/gh/Dip20/iconfly@main/fontawesome/svgs/';
+            process.env.CDN_BASE_URL || '';
 
         this.benchmark('System Startup');
         this.loadIcons();
@@ -29,7 +29,7 @@ export default class IconsService {
         }
     }
 
-    search({ query = '', page = 1, limit = 20 }) {
+    search({ query = '', page = 1, limit = 20, style = '' }) {
         this.benchmark('Search Starting');
 
         const normalizedQuery = query.toLowerCase().trim();
@@ -38,8 +38,9 @@ export default class IconsService {
 
         let results = this.icons;
 
+        // 1. Filter by search query
         if (normalizedQuery) {
-            results = this.icons.filter((icon) => {
+            results = results.filter((icon) => {
                 const label = icon.label?.toLowerCase() ?? '';
                 const searchTerms = Array.isArray(icon.terms)
                     ? icon.terms.map((t) => t.toLowerCase())
@@ -54,21 +55,28 @@ export default class IconsService {
             });
         }
 
-        const paginatedResults = results
-            .slice(startIndex, endIndex)
-            .flatMap((icon) => {
-                const freeStyles = icon.free || [];
-                if (freeStyles.length === 0) return [];
+        // 2. FlatMap BEFORE filtering by style and pagination
+        results = results.flatMap((icon) => {
+            const freeStyles = icon.free || [];
+            if (freeStyles.length === 0) return [];
 
-                return freeStyles.map((style) => ({
-                    key: icon.key,
-                    label: icon.label,
-                    style,
-                    cdnUrl: `${this.CDN_BASE_URL}/${style}/${icon.key}.svg`,
-                    terms: icon.terms,
-                    unicode: icon.unicode,
-                }));
-            });
+            return freeStyles.map((styleItem) => ({
+                key: icon.key,
+                label: icon.label,
+                style: styleItem,
+                cdnUrl: `${this.CDN_BASE_URL}/${styleItem}/${icon.key}.svg`,
+                terms: icon.terms,
+                unicode: icon.unicode,
+            }));
+        });
+
+        // 3. Filter by style
+        if (style !== 'all') {
+            results = results.filter((icon) => icon.style === style);
+        }
+
+        // 4. Paginate LAST
+        const paginatedResults = results.slice(startIndex, endIndex);
 
         this.benchmark('Searching Done');
 
